@@ -1,0 +1,45 @@
+{
+	"name": "csv_destination_file",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_storage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "dest",
+				"container": "containerblodstorageramu"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "emp_id",
+				"type": "String"
+			},
+			{
+				"name": "emp_name",
+				"type": "String"
+			},
+			{
+				"name": "emp_address",
+				"type": "String"
+			},
+			{
+				"name": "emp_phone_no",
+				"type": "String"
+			},
+			{
+				"name": "emp_dept",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,15 @@
+{
+	"name": "adftulasiramu",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "c305b762-f8ed-4f64-b23e-bb56975ed557",
+		"tenantId": "395cacfa-7eeb-47e2-ad5d-d91bfdabc617"
+	}
+}

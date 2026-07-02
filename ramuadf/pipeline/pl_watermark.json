@@ -1,0 +1,168 @@
+{
+	"name": "pl_watermark",
+	"properties": {
+		"activities": [
+			{
+				"name": "oldwatermarkvalue",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select tablename, watermarkvalue from dbo.watermarktable where tablename='employee'",
+						"queryTimeout": "02:00:00",
+						"isolationLevel": "ReadCommitted",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "TG_AzureSqlTable2",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "newwatermarkvalue",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select max(emp_date) as newwatermarkvalue from employee",
+						"queryTimeout": "02:00:00",
+						"isolationLevel": "ReadCommitted",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "watermarkcopy",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "oldwatermarkvalue",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "newwatermarkvalue",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT\n    emp_id,\n    emp_name,\n    emp_address,\n    emp_phone_no,\n    emp_dept,\n    emp_date\nFROM dbo.employee\nWHERE emp_date > '@{activity('oldwatermarkvalue').output.firstRow.watermarkvalue}' and\n    emp_date <= '@{activity('newwatermarkvalue').output.firstRow.newwatermarkvalue}'\n",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "TG_AzureSqlTable2",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Stored procedure1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "watermarkcopy",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[setWatermarkvalues]",
+					"storedProcedureParameters": {
+						"NewTime": {
+							"value": {
+								"value": "@{activity('newwatermarkvalue').output.firstRow.newwatermarkvalue}",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"tablename": {
+							"value": {
+								"value": "@activity('oldwatermarkvalue').output.firstRow.tablename",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "TG_AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-07-01T17:53:19Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
